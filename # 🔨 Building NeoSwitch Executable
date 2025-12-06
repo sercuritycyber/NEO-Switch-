@@ -1,0 +1,315 @@
+# 🔨 Building NeoSwitch Executable
+
+This guide will help you build a standalone executable of NeoSwitch using PyInstaller.
+
+## 📋 Prerequisites
+
+- **Python 3.8+**
+- **pip** (Python package manager)
+- **Operating System:** Linux, macOS, or Windows
+
+## 🚀 Quick Build (Linux/macOS)
+
+### Option 1: Using Build Script (Easiest)
+
+```bash
+# Make build script executable
+chmod +x build.sh
+
+# Run it
+./build.sh
+```
+
+The script will:
+1. ✅ Check Python installation
+2. ✅ Install PyInstaller and dependencies
+3. ✅ Clean previous builds
+4. ✅ Create spec file
+5. ✅ Build executable
+6. ✅ Show you where the output is
+
+### Option 2: Manual Build
+
+```bash
+# Install PyInstaller
+pip install pyinstaller customtkinter psutil
+
+# Build with spec file
+pyinstaller neoswitch.spec
+
+# Or build directly (single command)
+pyinstaller --onefile --windowed --name neoswitch \
+    --hidden-import customtkinter \
+    --hidden-import psutil \
+    --collect-data customtkinter \
+    vpngui.py
+```
+
+## 🪟 Windows Build
+
+### Using PowerShell:
+
+```powershell
+# Install PyInstaller
+pip install pyinstaller customtkinter psutil
+
+# Build
+pyinstaller neoswitch.spec
+
+# Or single command
+pyinstaller --onefile --windowed --name neoswitch.exe --hidden-import customtkinter --hidden-import psutil --collect-data customtkinter vpngui.py
+```
+
+## 📦 Output Locations
+
+After building:
+
+### Linux
+```
+dist/neoswitch          # Executable binary
+```
+
+### macOS
+```
+dist/NeoSwitch.app      # Application bundle
+```
+
+### Windows
+```
+dist/neoswitch.exe      # Executable
+```
+
+## 🔧 Build Options
+
+### Single File vs Directory
+
+**Single File (Default - Recommended):**
+```bash
+pyinstaller --onefile vpngui.py
+```
+- ✅ One portable file
+- ✅ Easy to distribute
+- ⚠️ Slightly slower startup (extracts to temp)
+
+**Directory Mode:**
+```bash
+pyinstaller --onedir vpngui.py
+```
+- ✅ Faster startup
+- ❌ Many files to distribute
+
+### Console vs Windowed
+
+**Windowed (Default - No console):**
+```bash
+pyinstaller --windowed vpngui.py
+```
+- ✅ Clean GUI-only app
+- ❌ Harder to debug
+
+**Console (Shows terminal):**
+```bash
+pyinstaller --console vpngui.py
+```
+- ✅ See debug output
+- ❌ Extra console window
+
+## 🎨 Adding an Icon
+
+1. **Create/Download an icon:**
+   - Linux: `.png` file
+   - macOS: `.icns` file
+   - Windows: `.ico` file
+
+2. **Add to spec file:**
+   ```python
+   exe = EXE(
+       ...
+       icon='path/to/icon.ico',  # Windows
+       icon='path/to/icon.icns', # macOS
+       ...
+   )
+   ```
+
+3. **Or use command line:**
+   ```bash
+   pyinstaller --onefile --windowed --icon=icon.ico vpngui.py
+   ```
+
+## 🐛 Troubleshooting
+
+### "Failed to execute script"
+
+**Solution:** Build with console to see errors:
+```bash
+pyinstaller --onefile --console vpngui.py
+./dist/neoswitch
+```
+
+### "No module named 'customtkinter'"
+
+**Solution:** Explicitly collect data:
+```bash
+pyinstaller --onefile \
+    --hidden-import customtkinter \
+    --collect-data customtkinter \
+    vpngui.py
+```
+
+### "Permission denied" on Linux/macOS
+
+**Solution:** Make executable:
+```bash
+chmod +x dist/neoswitch
+```
+
+### Large file size (100MB+)
+
+**Normal!** PyInstaller bundles Python + all dependencies. To reduce:
+
+```bash
+# Use UPX compression (if available)
+pyinstaller --onefile --upx-dir=/path/to/upx vpngui.py
+
+# Exclude unnecessary modules
+pyinstaller --onefile --exclude-module matplotlib vpngui.py
+```
+
+### CustomTkinter themes not working
+
+**Solution:** Ensure data files are collected:
+```python
+# In spec file
+datas = collect_data_files('customtkinter')
+```
+
+## 📊 Typical Build Sizes
+
+| Platform | Size     | Notes                    |
+|----------|----------|--------------------------|
+| Linux    | 80-120MB | Includes Python runtime  |
+| macOS    | 90-130MB | Includes framework       |
+| Windows  | 70-110MB | Smallest due to DLL reuse|
+
+## 🚀 Installing System-Wide
+
+### Linux
+```bash
+# Copy to system bin
+sudo cp dist/neoswitch /usr/local/bin/
+
+# Run from anywhere
+sudo neoswitch
+```
+
+### macOS
+```bash
+# Copy to Applications
+sudo cp -r dist/NeoSwitch.app /Applications/
+
+# Run from Spotlight or Applications folder
+```
+
+### Windows
+```powershell
+# Copy to Program Files
+Copy-Item dist/neoswitch.exe "C:\Program Files\NeoSwitch\"
+
+# Add to PATH or create desktop shortcut
+```
+
+## 🔐 Code Signing (Optional)
+
+### macOS
+```bash
+# Sign the app
+codesign --deep --force --verify --verbose --sign "Developer ID" dist/NeoSwitch.app
+
+# Notarize (for distribution)
+xcrun notarytool submit dist/NeoSwitch.app.zip --keychain-profile "AC_PASSWORD"
+```
+
+### Windows
+```powershell
+# Sign with certificate
+signtool sign /f certificate.pfx /p password /tr http://timestamp.digicert.com dist/neoswitch.exe
+```
+
+## 📦 Creating Installers
+
+### Linux (DEB package)
+```bash
+# Install fpm
+gem install fpm
+
+# Create package
+fpm -s dir -t deb -n neoswitch -v 1.0.0 \
+    --prefix /usr/local/bin \
+    dist/neoswitch=/neoswitch
+```
+
+### macOS (DMG)
+```bash
+# Create DMG
+hdiutil create -volname "NeoSwitch" -srcfolder dist/NeoSwitch.app -ov -format UDZO neoswitch.dmg
+```
+
+### Windows (NSIS Installer)
+```nsis
+; Use NSIS script (create installer.nsi)
+OutFile "NeoSwitch-Setup.exe"
+InstallDir "$PROGRAMFILES\NeoSwitch"
+Section
+    SetOutPath $INSTDIR
+    File "dist\neoswitch.exe"
+SectionEnd
+```
+
+## 🧪 Testing the Build
+
+### Quick Test
+```bash
+# Linux/macOS
+sudo ./dist/neoswitch
+
+# Windows
+.\dist\neoswitch.exe
+```
+
+### Full Test Checklist
+- [ ] Application launches
+- [ ] UI renders correctly
+- [ ] Can browse/add configs
+- [ ] OpenVPN connection works
+- [ ] WireGuard connection works
+- [ ] Kill switch enables/disables
+- [ ] Logs display correctly
+- [ ] Disconnect works cleanly
+
+## 💡 Build Tips
+
+1. **Clean before building:** `rm -rf build dist *.spec`
+2. **Test on target OS:** Build on the OS you'll run it on
+3. **Use virtual environment:** Keeps dependencies clean
+4. **Check file size:** If >150MB, something's wrong
+5. **Test as non-developer:** Give to someone without Python
+
+## 🆘 Need Help?
+
+- Check PyInstaller docs: https://pyinstaller.org
+- Open an issue: github.com/yourusername/neoswitch-vpn/issues
+- Discussions: github.com/yourusername/neoswitch-vpn/discussions
+
+## 📝 Build Configuration Files
+
+```
+neoswitch-vpn/
+├── vpngui.py          # Main script
+├── neoswitch.spec     # PyInstaller spec file
+├── build.sh           # Build script (Linux/macOS)
+└── BUILD.md           # This file
+```
+
+---
+
+**Happy Building!** 🎉
