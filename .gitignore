@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+venv/
+*.log
+
+# VPN configs (don't commit sensitive files!)
+*.ovpn
+*.conf
+auth.txt
+
+# OS
+.DS_Store
+Thumbs.db
